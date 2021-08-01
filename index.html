@@ -2,29 +2,64 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Project: L Learns Coding</title>
+    <title>AmazingFlyingCat Coding Projects</title>
     <style>
-        #sidebar {
-          width: 25%
-          float: left;
-          position: fixed;
-          left: 25%;
+        /* for seeing the boxes of elements */
+        .box {                             
+          border: 1px solid black;
         }
-        #page-title {
+        
+        #titlebar {
+          position: relative;
+          left: 0px;
+          right: 0px;
+          padding-left: 200px;
+        }
+        
+        #content-area {
           position: absolute;
-          left: 26%;
+          left: 166px;
+          right: 0px;
+          padding-left: 15px;
+          padding-right: 15px;
+          height: 500px;
         }
+        
+        #sidebar {
+           float: left;
+           position: relative;
+           left: 0 px;
+           width: 150px;
+           padding-left: 15px;
+           height: 500px;
+        }
+        
     </style>
   <head>
   <body>
-    <h1 id="page-title">AmazingFlyingCat Coding Projects</h1>
-    <div id="sidebar">
+    <div class="box" id="titlebar">
+        <h1>AmazingFlyingCat Coding Projects</h1>
+    </div>
+    
+    <div class="box" id="sidebar">
       <p>Here, there should be links to other pages</p>
       <ul>
         <li>link1</li>
         <li>link2</li>
         <li>link3</li>
+        <li>link4</li>
     </div>
-    <p>Hopefully I this works</p>
-  </body>
+    
+    <div class="box" id="content-area">
+    <p>Wheeee check out this content area!</p>
+    <p>More text</p>
+    <p>More text</p>
+    <p>More text</p>
+    <p>More text</p>
+    <p>More text</p>
+    <p>More text</p>
+    <p>More text</p>
+    </div>
+
+  </body> 
 </html>
