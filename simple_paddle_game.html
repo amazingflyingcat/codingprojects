@@ -1,0 +1,291 @@
+<!DOC-TYPE HTML>
+<!--A simple but expandable paddle game using HTML, CSS, and Javascript. Made by Jin-Huon Jou.-->
+<!--Version 0.1 created 8/4/21-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple Paddle Game</title>
+    <style>
+        #playArea {
+          position: fixed;
+          left: 10px;
+          top: 10px;
+          border: 5px solid black;
+        }
+        
+        #infoDiv {
+          position: fixed;
+          left: 100px;
+          top: 375px;
+        }
+        
+        button {
+          width: 75px;
+        }
+        
+        #start-button {
+          position: fixed;
+          left: 10px;
+          top: 325px;
+        }
+        
+        #stop-button {
+          position: fixed;
+          left: 10px;
+          top: 350px;
+        }
+        
+        #restart-button {
+          position: fixed;
+          left: 10px;
+          top: 375px;
+        }
+        
+        #score {
+          position: fixed;
+          left: 100px;
+          top: 325px;
+        }
+        
+        #directions {
+          position: fixed;
+          left: 100px;
+          top: 350px;
+        }
+        
+    </style>
+  </head>
+  <body onload="draw();">
+    <canvas id="playArea" width="500" height="300"></canvas>
+    <button id="start-button">START</button>
+    <button id="stop-button">STOP</button>
+    <button id="restart-button">RESTART</button>
+    <div id="score"></div>
+    <div id="directions"></div>
+    <div id="infoDiv"></div>
+    
+    <script>
+           
+      var canvas = document.getElementById("playArea"); //canvas for play area
+      var ctx = canvas.getContext("2d");
+      var continueGame = false; //start or stop game
+      
+      //this variable holds the starting values for the ball object
+      var ballInitial = { 
+        radius: 5,
+        xPos: 50,
+        yPos: 50, 
+        yVel: 4,
+        xVel: 4,
+        color: "red"
+      };
+      
+      //this variable holds the starting values for the paddle object
+      var paddleInitial = {
+        xPos: 5, //this should stay the same
+        yPos: 15,
+        width: 10,
+        height: 50,
+        color: "black",
+        speed: 5
+      };
+      
+      //this variable holds the ball object in use
+      var ball = { 
+        radius: ballInitial.radius, //size of ball
+        xPos: ballInitial.xPos, //X position on canvas
+        yPos: ballInitial.yPos, //Y position on canvas
+        yVel: ballInitial.yVel, //Y velocity
+        xVel: ballInitial.xVel, //X velocity
+        color: ballInitial.color //color of ball
+      };
+      
+      //this variable holds the paddle object in use
+      var paddle = { 
+        xPos: paddleInitial.xPos, //this should stay the same
+        yPos: paddleInitial.yPos,
+        width: paddleInitial.width,
+        height: paddleInitial.height,
+        color: paddleInitial.color,
+        speed: paddleInitial.speed
+      };
+      var scoreCounter = 0; //keeps track of score
+      
+      var aPressed = false; //holds boolean variable for whether the A key is pressed
+      var sPressed = false; //holds boolean variable for whether the S key is pressed
+      
+      //Buttons
+      var startButton = document.getElementById("start-button"); //Start button
+      var stopButton = document.getElementById("stop-button"); //Stop button
+      var restartButton = document.getElementById("restart-button"); //Restart button
+      
+      //Text
+      var infoDivEl = document.getElementById("infoDiv"); //Text display on webpage
+      var scoreEl = document.getElementById("score"); //Score display element (div)
+      var directionsEl = document.getElementById("directions"); //Directions text display (div)
+      directionsEl.textContent = "Press A to move paddle up. Press S to move paddle down.";
+      
+      //This function draws the ball
+      var drawBall = function() {
+        ctx.beginPath();
+        ctx.arc(ball.xPos, ball.yPos, ball.radius, 0, 2*Math.PI);
+        ctx.fillStyle = ball.color;
+        ctx.fill();
+        //console.log("drawing ball");
+      };
+      
+      //This function draws the paddle based on the paddle object's properties
+      var drawPaddle = function() {
+        ctx.beginPath();
+        ctx.fillStyle = paddle.color;
+        ctx.fillRect(paddle.xPos, paddle.yPos, paddle.width, paddle.height);
+        //console.log("drawing paddle at " + paddle.xPos + ", " + paddle.yPos);
+      };
+      
+      //This function moves the paddle based on the paddle object's properties and the canvas height
+      var movePaddle = function() {
+        if (aPressed === true && paddle.yPos > 0) {
+            paddle.yPos = paddle.yPos - paddle.speed;
+        } else if (sPressed === true && paddle.yPos + paddle.height < canvas.height) {
+            paddle.yPos = paddle.yPos + paddle.speed;
+        }
+      };
+      
+      //This function moves the ball and changes the ball's based on it's position relative to the canvas borders and the paddle right border
+      var moveBall = function() { 
+        var topBorder = ball.yPos - ball.radius;
+        var rightBorder = ball.xPos + ball.radius;
+        var bottomBorder = ball.yPos + ball.radius;
+        var leftBorder = ball.xPos - ball.radius;
+        var paddleRightBorder = paddle.xPos + paddle.width;
+        //var paddleLeftBorder = paddle.xPos;
+        var paddleTopBorder = paddle.yPos;
+        var paddleBottomBorder = paddle.yPos + paddle.height;
+        //console.log("Paddle - L border: " + paddleLeftBorder + ". R border: " + paddleRightBorder + ". Top: " + paddleTopBorder + ". Bottom: " + paddleBottomBorder);
+        //console.log("Ball - L border: " + leftBorder + ". R border: " + rightBorder + ". Top border: " + topBorder + ". Bottom border: " + bottomBorder);
+        //console.log ("Ball coordinates: " + ball.xPos + ", " + ball.yPos);
+        if ((topBorder <= 1 && rightBorder >= canvas.width) || (bottomBorder >= canvas.height && rightBorder >= canvas.width)) { //right side corner cases, reverse vert and horiz velocities
+            ball.yVel = ball.yVel * -1;
+            ball.xVel = ball.xVel * -1;
+        }
+        if ((topBorder < 1) || (bottomBorder >= canvas.height)) { //canvas top and bottom detection, reverse vert velocity
+            ball.yVel = ball.yVel * -1;
+        }
+        if (rightBorder >= canvas.width) { //right canvas border detection, reverse horiz velocity
+            ball.xVel = ball.xVel * -1;
+        }
+        if (leftBorder === paddleRightBorder && (bottomBorder === paddleTopBorder || topBorder === paddleBottomBorder)) { //paddle detection corner cases
+            ball.xVel = ball.xVel * -1;
+            ball.yVel = ball.yVel * -1;
+            scoreCounter++;
+        }
+        if (bottomBorder >= paddleTopBorder && bottomBorder <= paddleTopBorder+(ball.yVel) && leftBorder <= paddleRightBorder) { //paddle top detection
+            if (Math.sign(ball.yVel) === 1) {
+              ball.yVel = ball.yVel * -1;
+              console.log("Paddle top detected");
+            }
+        }
+        if (topBorder <= paddleBottomBorder && topBorder >= paddleBottomBorder-(ball.yVel*-1) && leftBorder <= paddleRightBorder){ //paddle bottom detection
+            if (Math.sign(ball.yVel) === -1) {
+            ball.yVel= ball.yVel * -1;
+            console.log("Paddle bottom detected");
+            }
+        }
+        if ((leftBorder <= paddleRightBorder && leftBorder >= paddleRightBorder-(ball.xVel*-1)) && ball.yPos >= paddleTopBorder && ball.yPos <= paddleBottomBorder) { //paddle detection
+            ball.xVel = ball.xVel * -1;
+            scoreCounter++;
+            console.log("Paddle detected");
+        }
+        if (leftBorder < 1) { //left canvas border detection (game over)
+            gameOver();
+        }
+        ball.xPos = ball.xPos + ball.xVel;
+        ball.yPos = ball.yPos + ball.yVel;
+      };
+      
+      
+      //These functions dictate whether to start and stop the game
+      var stopGameFxn = function() {
+        continueGame = false;
+      };
+      var startGameFxn = function() {
+        continueGame = true;
+        draw();
+      };
+      
+      //This function resets the game to starting position
+      var restartGameFxn = function() {
+        continueGame = false;
+        infoDivEl.textContent = "";
+        scoreCounter = 0;
+        paddle.xPos = 0;
+        ball.xPos = ballInitial.xPos;
+        ball.yPos = ballInitial.yPos;
+        ball.xVel = ballInitial.xVel;
+        ball.yVel = ballInitial.yVel;
+        paddle.xPos = paddleInitial.xPos;
+        paddle.yPos = paddleInitial.yPos;
+        paddle.width = paddleInitial.width;
+        paddle.height = paddleInitial.height;
+        paddle.speed = paddleInitial.speed;
+        window.requestAnimationFrame(draw);
+      };
+      
+      //These functions detect keydown and keyup for A and S
+      function keyDownHandler(event) {
+        if (event.keyCode === 87) {
+            aPressed = true;
+        }
+        if (event.keyCode === 83) {
+            sPressed = true;
+        }
+      }
+      function keyUpHandler(event) {
+        if (event.keyCode === 87) {
+            aPressed = false;
+        }
+        if (event.keyCode === 83) {
+            sPressed = false;
+        }
+      }
+      
+      //this function is run when the player misses the ball with the paddle
+      function gameOver() {
+        continueGame = false;
+        infoDivEl.textContent = "GAME OVER - Press RESTART to reset.";
+      }
+      
+      //Event Listeners for the start and stop buttons
+      startButton.addEventListener("click", startGameFxn);
+      stopButton.addEventListener("click", stopGameFxn);
+      restartButton.addEventListener("click", restartGameFxn);
+      //Event Listeners for keyboard controls
+      document.addEventListener("keydown", keyDownHandler, false);
+      document.addEventListener("keyup", keyUpHandler, false);
+      
+      //Game and interaction code goes here
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);//clear screen
+        drawPaddle();
+        movePaddle();
+        drawBall(); //draw the ball
+        moveBall(); //move the ball
+        scoreEl.textContent = "Score: " + scoreCounter;
+        
+        
+        
+        //Starting and stopping the game
+        if (continueGame === true) {
+          window.requestAnimationFrame(draw);
+          //infoDivEl.textContent = "GAME IS GOING";
+        } else {
+          //infoDivEl.textContent = "GAME IS STOPPED";
+        }
+        
+      }
+      
+      
+      
+    </script>
+  </body> 
+</html>
