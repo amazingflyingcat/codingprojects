@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple Platformer</title>
+    <style>
+        #playArea {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          border: 5px solid black;
+        }
+            
+        #controlsText {
+          position: absolute;
+          top: 425px;
+          left: 200px;
+        }
+        
+        #instructionsText {
+          position: absolute;
+          top: 450px;
+          left: 200px
+        }
+        
+        #screenText {
+          color: yellow;
+          background-color: black;
+          position: absolute;
+          top: 200px;
+          left: 40px;
+          font-size: 25px;
+        }
+        
+        .gameButtons {
+          width: 75px;
+        }
+        
+        #startButton {
+          position: absolute;
+          top: 425px;
+          left: 10px;
+        }
+        
+        #pauseButton {
+          position: absolute;
+          top: 450px;
+          left: 10px;
+        }
+        
+        
+    </style>    
+  </head>
+  <body>
+    <canvas id="playArea" width="600px" height="400px"></canvas>
+    <button id="startButton" class="gameButtons">START</button>
+    <button id="pauseButton" class="gameButtons">PAUSE</button>
+    <div id="controlsText">Controls</div>
+    <div id="instructionsText">Instructions</div>
+    <div id="screenText"></div>
+    
+    
+    
+    
+    <script>
+      var continueGame = false; //This var controls whether the canvas continues to refresh
+      var controlsText = document.getElementById("controlsText"); //This var stores the text to display the controls
+      var instructionsText = document.getElementById("instructionsText");
+      var screenText = document.getElementById("screenText")
+      var canvas = document.getElementById("playArea"); //This var stores the canvas/play area
+      var ctx = canvas.getContext("2d");
+      var startButton = document.getElementById("startButton"); //This var stores the start button element
+      var pauseButton = document.getElementById("pauseButton"); //This var stores the pause button element
+      var arrowLeft = false;
+      var arrowRight = false;
+      var keyZ = false;
+      
+      //Text explaining controls
+      controlsText.textContent = "Press Left and Right Arrows to move. Press keyZ to Jump.";
+      //Text instructions
+      instructionsText.textContent = "Move the green box to the blue flag to advance!";
+      
+      
+      //Default player settings
+      var playerInitial = {
+        position: {x: 20, y: 320}, //starting coordinates
+        width: 10, //player's width
+        height: 10, //player's height
+        moveSpeed: 2, //player's movement speed
+        jumpHeight: 20, //player's jump height
+        color: "green", //player's display color
+        jumpCounter: 0 //variable to keep track of jumping
+      };
+      
+      //Player data
+      var player = {
+        position: playerInitial.position,
+        width: playerInitial.width,
+        height: playerInitial.height,
+        moveSpeed: playerInitial.moveSpeed,
+        jumpHeight: playerInitial.jumpHeight,
+        color: playerInitial.color,
+        jumpCounter: playerInitial.jumpCounter
+      };
+      
+      //This function draws the player
+      var drawPlayer = function() {
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.position.x, player.position.y, player.width, player.height);
+      };
+      
+      /*This function moves the player left and right based on key presses thru the key handler functions.
+       *Jumps are tracked via player.jumpCounter.
+       *When a jump is initiated by pressing the jump button ('z' by default), player.jumpCounter is set to player.jumpHeight,
+       *The player continues to move up until jumpCounter counts down to zero, then "gravity" (the first few if and else if statements) takes over
+      */
+      var movePlayer = function(currentLevel) {
+        //console.log("movePlayer function called!");
+        //console.log("Canvas width: " + canvas.width);
+         if (isOnSurface(player, currentLevel) === false && player.jumpCounter === 0 && arrowLeft === true && player.position.x >= 0) {
+            player.position.y += 2;
+            player.position.x -= player.moveSpeed;
+            //console.log("gravity + left");
+        } else if (isOnSurface(player, currentLevel) === false && player.jumpCounter === 0 && arrowRight === true && player.position.x <= canvas.width-5) {
+            player.position.y += 2;
+            player.position.x += player.moveSpeed;
+            //console.log("gravity + right");
+        } else if ( isOnSurface(player, currentLevel) === false && player.jumpCounter === 0) {
+            player.position.y += 2;
+            //console.log("gravity alone");
+        } else if ( keyZ === true && isOnSurface(player, currentLevel) === true && player.jumpCounter === 0) {
+            player.jumpCounter = player.jumpHeight;
+            player.position.y -= 2;
+            //console.log("jump start");
+        } else if (keyZ === true && isOnSurface(player, currentLevel) === true && player.jumpCounter === 0 && arrowLeft === true && player.position.x >= 0) {
+            player.jumpCounter = player.jumpHeight;
+            player.position.y -= 2;
+            player.position.x -= player.moveSpeed;
+            //console.log("jump start left");
+        } else if (keyZ === true && isOnSurface(player, currentLevel) === true && player.jumpCounter === 0 && arrowRight === true && player.position.x <= canvas.width-5) {
+            player.jumpCounter = player.jumpHeight;
+            player.position.y -= 2;
+            player.position.x += player.moveSpeed;
+            //console.log("jump start right");
+        } else if ( arrowLeft === true && player.position.x >= 0 && isOnSurface(player, currentLevel)) {
+            player.position.x -= player.moveSpeed;
+            //console.log("left alone");
+        } else if ( arrowRight === true && player.position.x <= canvas.width-5 && isOnSurface(player, currentLevel)) {
+            player.position.x += player.moveSpeed;
+            //console.log("right alone");
+        } else if (player.jumpCounter > 0 && arrowLeft === true && player.position.x >= 0) {
+            player.position.y -= 2;
+            player.position.x -= player.moveSpeed;
+            player.jumpCounter--;
+            //console.log("jumping left");
+        } else if (player.jumpCounter > 0 && arrowRight === true && player.position.x <= canvas.width-5) {
+            player.position.y -= 2;
+            player.position.x += player.moveSpeed;
+            player.jumpCounter --;
+            //console.log("jumping right");
+        } else if (player.jumpCounter > 0 && !isOnSurface(player, currentLevel)) {
+            player.position.y -= 2;
+            player.jumpCounter--;
+            //console.log("jumping straight");
+        }
+      };
+    
+    
+      /* This function receives object (player) and the current level's surface array,
+       * returns boolean whether player is on a surface that is currently drawn (in currentLevel object) */
+      var isOnSurface = function(object1, currentLevel) {
+        let obj1x = object1.position.x;
+        let obj1y = object1.position.y;
+        let obj1w = object1.width;
+        let obj1h = object1.height;
+        let obj1leftBorder = obj1x;
+        let obj1rightBorder = obj1x + obj1w;
+        let obj1bottomBorder = obj1y + obj1h;
+        
+        for (let i = 0; i < currentLevel.platformArray.length; i++) {
+          let surfaceLeftBorder = currentLevel.platformArray[i].xPos;
+          let surfaceRightBorder = currentLevel.platformArray[i].xPos + currentLevel.platformArray[i].width;
+          let surfaceTopBorder = currentLevel.platformArray[i].yPos;
+          //let surfaceHeight = currentLevel.platformArray[i].height;
+          //console.log("Surfaces - Left border: " + surfaceLeftBorder + " Right border: " + surfaceRightBorder + " surfaceTopBorder: " + surfaceTopBorder);
+          if ( (obj1bottomBorder === surfaceTopBorder || obj1bottomBorder === surfaceTopBorder+1 || obj1bottomBorder === surfaceTopBorder+2) && (obj1rightBorder >= surfaceLeftBorder) && (obj1leftBorder <= surfaceRightBorder) ) {
+            //console.log("player is on surface!");
+            player.position.y = currentLevel.platformArray[i].yPos - player.height;
+            player.jumpCounter = 0;
+            return true;
+          }
+        }
+        return false;
+      };   
+      
+      
+      //Constructor for Platform objects
+      function Platform(xPos, yPos, width, height, color) {
+        this.xPos = xPos;
+        this.yPos = yPos;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+      }
+      
+      //This function draws platforms of current level
+      var drawPlatforms = function(currentLevel) {
+        for (let i = 0; i < currentLevel.platformArray.length; i++) {
+          let array = currentLevel.platformArray;
+          ctx.fillStyle = array[i].color;
+          ctx.fillRect(array[i].xPos, array[i].yPos, array[i].width, array[i].height);
+          ctx.fill();
+        }
+      };
+      
+      //Constructor for Goal objects
+      function Goal(xPos, yPos, height) {
+        this.xPos = xPos;
+        this.yPos = yPos;
+        this.height = height;
+      }
+      
+      //This function draws the goal of the current level
+      var drawGoal = function(currentLevel) {
+        let goal = currentLevel.goal;
+        let xPos = goal.xPos;
+        let yPos = goal.yPos;
+        let height = goal.height;
+        ctx.beginPath();
+        ctx.lineWidth = "2";
+        ctx.strokeStyle = "blue";
+        ctx.moveTo(xPos, yPos);
+        ctx.lineTo(xPos, yPos-height);
+        ctx.lineTo(xPos+15, yPos-25);
+        ctx.lineTo(xPos, yPos-25);
+        ctx.fillStyle = "blue";
+        ctx.fill();
+        ctx.stroke();
+      };
+      
+      //This function returns a boolean based on whether player has touched goal
+      var playerInGoal = function(player, currentLevel) {
+        let pX = player.position.x;
+        let pY = player.position.y;
+        let pW = player.width;
+        let pH = player.height;
+        let pRightBorder = pX + pW;
+        let pLeftBorder = pX;
+        let pTopBorder = pY;
+        let pBottomBorder = pY + pH;
+        let goal = currentLevel.goal;
+        let gX = goal.xPos;
+        let gY = goal.yPos;
+        let gH = goal.height;
+        let gTopBorder = gY - gH;
+        let gBottomBorder = gY;
+        if ((gX <= pRightBorder && gX >= pLeftBorder) && (pTopBorder >= gTopBorder && pBottomBorder <= gBottomBorder)) {
+          return true;
+        }
+        return false;
+      };
+      
+      //Levels: an object containing an array of platforms and a goal
+      let levels = [];
+      let levelCounter = 0;
+      
+      let level_00 = {
+        playerStartPos: {x: 20, y: 320},
+        platformArray: [
+          new Platform(0, 400, 600, 10, "black"), //floor
+        ],
+        goal: new Goal(550, 400, 35)
+      };
+      levels.push(level_00);
+      
+      let level_01 = {
+        playerStartPos: {x: 20, y:320},
+        platformArray: [
+          new Platform(0, 400, 600, 10, "black"), //floor
+          new Platform(450, 375, 50, 10, "black"),
+          new Platform(525, 350, 50, 10, "black")
+        ],
+        goal: new Goal(550, 350, 35)
+      };
+      levels.push(level_01);
+      
+      let level_02 = {
+        playerStartPos: {x: 20, y: 200},
+        platformArray: [
+          new Platform(0, 400, 600, 10, "black"), //floor
+          new Platform(10, 250, 100, 10, "black"),
+          new Platform(120, 275, 50, 10, "black"),
+          new Platform(180, 300, 50, 10, "black"),
+          new Platform(240, 275, 50, 10, "black"),
+          new Platform(300, 250, 100, 10, "black"),
+          new Platform(465, 375, 50, 10, "black"),
+          new Platform(525, 350, 50, 10, "black")
+        ],
+        goal: new Goal(550, 350, 35)
+      };
+      levels.push(level_02);
+      
+      let level_03 = {
+        playerStartPos: {x: 20, y: 350},
+        platformArray: [
+          new Platform(0, 400, 600, 10, "black"), //floor
+          new Platform(350, 375, 50, 10, "black"),
+          new Platform(250, 350, 50, 10, "black"),
+          new Platform(350, 325, 50, 10, "black"),
+          new Platform(250, 300, 50, 10, "black"),
+          new Platform(350, 275, 50, 10, "black"),
+          new Platform(250, 250, 50, 10, "black"),
+          new Platform(350, 225, 50, 10, "black"),
+          new Platform(250, 200, 50, 10, "black")
+        ],
+        goal: new Goal(275, 200, 35)
+      };
+      levels.push(level_03);
+      
+      let level_04 = {
+        playerStartPos: {x: 10, y: 392},
+        platformArray: [
+          new Platform(0, 400, 600, 10, "black"), //floor
+          new Platform(10, 380, 20, 10, "black"),
+          new Platform(10, 360, 20, 10, "black"),
+          new Platform(10, 340, 20, 10, "black"),
+          new Platform(10, 320, 20, 10, "black"),
+          new Platform(10, 300, 20, 10, "black"),
+          new Platform(100, 300, 50, 10, "black"),
+          new Platform(130, 280, 20, 10, "black"),
+          new Platform(130, 260, 20, 10, "black"),
+          new Platform(130, 240, 20, 10, "black"),
+          new Platform(130, 220, 20, 10, "black"),
+          new Platform(130, 200, 20, 10, "black"),
+          new Platform(220, 200, 50, 10, "black"),
+          new Platform(250, 180, 20, 10, "black"),
+          new Platform(250, 160, 20, 10, "black"),
+          new Platform(250, 140, 20, 10, "black"),
+          new Platform(250, 120, 20, 10, "black"),
+          new Platform(250, 100, 20, 10, "black"),
+          new Platform(350, 100, 225, 10, "black"),
+          new Platform(500, 250, 100, 10, "black"),
+          new Platform(475, 350, 50, 10, "black")
+        ],
+        goal: new Goal(500, 350, 35)
+      };
+      levels.push(level_04);
+      
+      //Player start position begins with level_00
+      let currentLevel = levels[levelCounter];
+      player.position = currentLevel.playerStartPos; 
+
+      
+      
+      
+      //These functions detect keydown and keyup for A and S
+      function keyDownHandler(event) {
+        if (event.keyCode === 37) {
+            arrowLeft = true;
+        }
+        if (event.keyCode === 39) {
+            arrowRight = true;
+        }
+        if (event.keyCode === 90) {
+            keyZ = true;
+        }
+      }
+      function keyUpHandler(event) {
+        if (event.keyCode === 37) {
+            arrowLeft = false;
+        }
+        if (event.keyCode === 39) {
+            arrowRight = false;
+        }
+        if (event.keyCode === 90) {
+          keyZ = false;
+        }
+      }
+      
+      //These functions start and stop the game
+      var startGameFxn = function() {
+        continueGame = true;
+        draw();
+        //console.log("startGame function called");
+      };
+      var pauseGameFxn = function() {
+        continueGame = false;
+        //console.log("pauseGame function called");
+      };
+      
+      //This function shows the advance level screen
+      let advanceLevelFxn = function() {
+        if (levelCounter+1 === levels.length) {
+          screenText.textContent = "You've reached the end! Thanks for playing!";
+          continueGame = false;
+          return true;
+        }
+        
+        player.moveSpeed = 0;
+        screenText.textContent = "Hooray! Press 'z' to advance to next level!";
+        if (keyZ === true) {
+          //console.log("continuing game");
+          levelCounter++;
+          currentLevel = levels[levelCounter];
+          player.jumpCounter = 0;
+          player.position.x = currentLevel.playerStartPos.x;
+          player.position.y = currentLevel.playerStartPos.y;
+          player.moveSpeed = playerInitial.moveSpeed;
+          screenText.textContent = "";
+        }
+      };
+      
+      //Event Listeners for key presses presses
+      document.addEventListener("keydown", keyDownHandler);
+      document.addEventListener("keyup", keyUpHandler);
+      
+      //Event Listeners for starting, pausing the game
+      startButton.addEventListener("click", startGameFxn);
+      pauseButton.addEventListener("click", pauseGameFxn);
+      
+      //This function calls various functions in order to run the game
+      function draw() {
+        //clear screen
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        //draw platforms of current level
+        drawPlatforms(currentLevel);
+        
+        //draw goal of current level
+        drawGoal(currentLevel);
+        
+        //move the player
+        movePlayer(currentLevel);
+        
+        //draw the player
+        drawPlayer();
+        
+        //if player reaches goal, stop and display message
+        if (playerInGoal(player, currentLevel)) {
+          advanceLevelFxn();
+        }
+        
+        //CODE TO DISPLAY PLAYER DATA
+        /*
+        console.log("Player object info");
+        console.log("Player coordinates: " + player.position.x + ", " + player.position.y);
+        console.log("Width: " + player.width);
+        console.log("Height: " + player.height);
+        console.log("Move speed: " + player.moveSpeed);
+        console.log("Jump height: " + player.jumpHeight);
+        */
+        
+        //Starting and stopping the game
+        if (continueGame !== false) {
+          //console.log("game is running");
+          window.requestAnimationFrame(draw);
+        } else {
+            //console.log("game is paused");
+        }
+        
+        
+        
+      }
+           
+    </script>
+  </body>
+</html>
